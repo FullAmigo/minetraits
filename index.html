@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイクラの遊び方でわかる！キャリアビジョン診断</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+/* Google Fontsからドット絵フォントを読み込む */
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+body { 
+    font-family: 'DotGothic16', sans-serif; /* 全体をドットフォントに */
+    background: #47a036; /* マイクラの草の色 */
+    display: flex; 
+    justify-content: center; 
+    padding: 15px; 
+    margin: 0; 
+}
+
+#app-container { 
+    background: #795548; /* 土の色 */
+    border: 6px solid #3d2b24; /* 濃い土色の枠線 */
+    width: 100%; 
+    max-width: 480px; 
+    padding: 25px; 
+    border-radius: 0px; /* マイクラなので角は丸めない */
+    box-shadow: 0 10px 0 #2d1f1a; 
+    text-align: center; 
+    box-sizing: border-box; 
+    color: white; /* 文字は白が見やすい */
+}
+
+/* 草ブロックの「上の緑部分」を再現する装飾 */
+#app-container::before {
+    content: "";
+    display: block;
+    height: 15px;
+    background: #5eb84d;
+    margin: -25px -25px 20px -25px;
+    border-bottom: 5px solid #47a036;
+}
+
+.btn { 
+    display: block; 
+    width: 100%; 
+    padding: 15px; 
+    margin: 12px 0; 
+    border: 3px solid #000; 
+    background: #bcbcbc; /* マイクラのボタン風のグレー */
+    color: #333; 
+    font-family: 'DotGothic16', sans-serif;
+    font-size: 18px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    box-shadow: inset -4px -4px 0 #818181, inset 4px 4px 0 #ffffff; /* 立体感 */
+}
+
+.btn:active { 
+    box-shadow: inset 4px 4px 0 #818181, inset -4px -4px 0 #ffffff; 
+    transform: translateY(2px);
+}
+
+/* ハートの進行状況 */
+.heart-container {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #ff0000; /* ハートの赤 */
+    letter-spacing: 3px;
+}
+
+/* ドット絵ハートの本体 */
+.pixel-heart {
+    display: inline-block;
+    position: relative;
+    width: 2px; /* 1ドットのサイズ */
+    height: 2px;
+    margin: 10px 10px; /* ハート同士の間隔 */
+    /* box-shadowでドットを並べてハートの形を作る */
+    box-shadow:
+        2px 0 #000, 4px 0 #000, 8px 0 #000, 10px 0 #000,
+        0 2px #000, 2px 2px #f00, 4px 2px #f00, 6px 2px #000, 8px 2px #f00, 10px 2px #f00, 12px 2px #000,
+        0 4px #000, 2px 4px #f00, 4px 4px #f00, 6px 4px #f00, 8px 4px #f00, 10px 4px #f00, 12px 4px #000,
+        0 6px #000, 2px 6px #f00, 4px 6px #f00, 6px 6px #f00, 8px 6px #f00, 10px 6px #f00, 12px 6px #000,
+        2px 8px #000, 4px 8px #f00, 6px 8px #f00, 8px 8px #f00, 10px 8px #000,
+        4px 10px #000, 6px 10px #f00, 8px 10px #000,
+        6px 12px #000;
+}
+
+/* グレーのハート（未回答用） */
+.pixel-heart.empty {
+    /* 赤色(#f00)をグレー(#555)に置き換えた影を指定 */
+    box-shadow:
+        2px 0 #000, 4px 0 #000, 8px 0 #000, 10px 0 #000,
+        0 2px #000, 2px 2px #555, 4px 2px #555, 6px 2px #000, 8px 2px #555, 10px 2px #555, 12px 2px #000,
+        0 4px #000, 2px 4px #555, 4px 4px #555, 6px 4px #555, 8px 4px #555, 10px 4px #555, 12px 4px #000,
+        0 6px #000, 2px 6px #555, 4px 6px #555, 6px 6px #555, 8px 6px #555, 10px 6px #555, 12px 6px #000,
+        2px 8px #000, 4px 8px #555, 6px 8px #555, 8px 8px #555, 10px 8px #000,
+        4px 10px #000, 6px 10px #555, 8px 10px #000,
+        6px 12px #000;
+}
+
+/* すべてのエリアを一旦非表示にする設定 */
+#quiz-area, #result-area {
+    display: none; /* これが「物理的に存在しない」状態にする魔法の言葉です */
+}
+
+/* 診断結果の各見出し（ラベル）の装飾 */
+.label {
+    display: inline-block;
+    background: #3d2b24; /* 濃い土色で背景を作る */
+    color: #ffeb3b; /* 文字はマイクラの「金」のような黄色に */
+    padding: 2px 8px;
+    margin-bottom: 8px;
+    border: 2px solid #000;
+    font-size: 14px;
+    box-shadow: 2px 2px 0px #2d1f1a;
+}
+
+/* 項目ごとのまとまりに少し余白を作る */
+.result-item {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.2); /* 項目間の区切り線 */
+}
+.disclaimer {
+    margin-top: 30px;
+    font-size: 10px; /* 小さめの文字 */
+    color: rgba(255, 255, 255, 0.6); /* 少し透けさせて目立たなくする */
+    line-height: 1.4;
+    text-align: center;
+}
+.share-btn {
+    background: #3f51b5; /* ラピスラズリ色 */
+    color: white;
+    margin-top: 20px;
+    box-shadow: inset -4px -4px 0 #283593, inset 4px 4px 0 #7986cb;
+}
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="start-screen">
+        <h1>マイクラの<ruby>遊<rt>あそ</rt></ruby>び<ruby>方<rt>かた</rt></ruby>でわかる！<br>キャリアビジョン<ruby>診断<rt>しんだん</rt></ruby></h1>
+        <p>10<ruby>年後<rt>ねんご</rt></ruby>の<ruby>未来<rt>みらい</rt></ruby>で、<ruby>君<rt>きみ</rt></ruby>はどんな<ruby>力<rt>ちから</rt></ruby>を<br><ruby>発揮<rt>はっき</rt></ruby>しているかな？</p>
+        <button class="btn" onclick="startQuiz()">スタート！</button>
+        <div class="disclaimer">
+        ※このアプリはマインクラフト公式（Mojang / Microsoft）の製品ではありません。<br>
+        マインクラフトのファンコンテンツガイドラインに基づいた教育用アプリです。
+        </div>
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="https://mamaprogramming.jimdofree.com/" target="_blank" style="color: #ffffff; text-decoration: underline; font-family: 'DotGothic16', sans-serif;">
+        🚀 プログラミング教室の公式ページはこちら
+        </a>
+    </div>
+    </div>
+
+    <div id="quiz-area">
+        <div class="heart-container" id="heart-display"></div>
+        <h2 id="question-text"></h2>
+        <div id="answer-buttons"></div>
+    </div>
+    <div id="result-area">
+        <p style="margin-bottom: 5px;"><ruby>君<rt>きみ</rt></ruby>の<ruby>未来<rt>みらい</rt></ruby>の<ruby>役割<rt>やくわり</rt></ruby>は…</p>
+        <div id="result-title-main" class="result-title-main"></div>
+        
+        <canvas id="resultChart"></canvas>
+
+        <div class="result-content" id="result-details">
+            </div>
+        
+        <button class="btn share-btn" onclick="shareResult()">
+        📢 結果をみんなに教える
+        </button>
+
+        <button class="btn" onclick="location.reload()" style="background: #888; box-shadow: 0 4px 0 #666; margin-top: 20px;">もう一度診断する</button>
+    </div>
+</div>
+
+<script>
+// 質問データ
+const questions = [
+    {
+        text: "巨大な<ruby>橋<rt>はし</rt></ruby>を<ruby>作<rt>つく</rt></ruby>ることになった！<br>まず何をする？",
+        options: [
+            { text: "<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>設計図<rt>せっけいず</rt></ruby>をしっかり<ruby>描<rt>えが</rt></ruby>く", type: "Architect" },
+            { text: "まずはブロックを<ruby>置<rt>お</rt></ruby>きながら<ruby>形<rt>かたち</rt></ruby>を<ruby>決<rt>きめる</rt></ruby>める", type: "Hacker" }
+        ]
+    },
+    {
+        text: "<ruby>洞窟<rt>どうくつ</rt></ruby>で<ruby>迷子<rt>まいご</rt></ruby>になった！<br>どうやって<ruby>帰<rt>かえ</rt></ruby>る？",
+        options: [
+            { text: "<ruby>座標<rt>ざひょう</rt></ruby>や<ruby>松明<rt>たいまつ</rt></ruby>を<ruby>分析<rt>ぶんせき</rt></ruby>して<ruby>道<rt>みち</rt></ruby>をさがす", type: "Strategist" },
+            { text: "<ruby>仲間<rt>なかま</rt></ruby>を<ruby>励<rt>はげ</rt></ruby>ましながらいっしょに<ruby>出口<rt>でぐち</rt></ruby>をさがす", type: "Organizer" }
+        ]
+    },
+    {
+        text: "<ruby>村<rt>むら</rt></ruby>の<ruby>自動装置<rt>じどうそうち</rt></ruby>が<ruby>動<rt>うご</rt></ruby>かない！どうする？",
+        options: [
+            { text: "<ruby>仕組<rt>しく</rt></ruby>みを<ruby>調<rt>しら</rt></ruby>べて<ruby>新<rt>あたら</rt></ruby>しく<ruby>作<rt>つく</rt></ruby>りなおす", type: "Hacker" },
+            { text: "ミスがないか<ruby>隅々<rt>すみずみ</rt></ruby>まで<ruby>点検<rt>てんけん</rt></ruby>する", type: "Quality" }
+        ]
+    },
+    {
+        text: "みんなでイベントをひらくなら、どっちの<ruby>仕事<rt>しごと</rt></ruby>がしたい？",
+        options: [
+            { text: "<ruby>景品<rt>けいひん</rt></ruby>やルールをくわしく<ruby>決<rt>き</rt></ruby>める", type: "Quality" },
+            { text: "みんなを<ruby>呼<rt>よ</rt></ruby>んでイベントを<ruby>盛<rt>も</rt></ruby>り<ruby>上<rt>あ</rt></ruby>げる", type: "Visionary" }
+        ]
+    },
+    {
+        text: "<ruby>冒険<rt>ぼうけん</rt></ruby>から<ruby>帰<rt>かえ</rt></ruby>ってきて、アイテムが余ったときは？",
+        options: [
+            { text: "<ruby>種類<rt>しゅるい</rt></ruby>ごとにチェストに<ruby>整理<rt>せいり</rt></ruby>する", type: "Strategist" },
+            { text: "<ruby>必要<rt>ひつよう</rt></ruby>な<ruby>人<rt>ひと</rt></ruby>に<ruby>配<rt>くば</rt></ruby>りあるく", type: "Organizer" }
+        ]
+    },
+    {
+        text: "<ruby>大型<rt>おおがた</rt></ruby>アップデートがきた！<br>まず何をする？",
+        options: [
+            { text: "<ruby>新<rt>あたら</rt></ruby>しいブロックで<ruby>何<rt>なに</rt></ruby>ができるか<ruby>検証<rt>けんしょう</rt></ruby>する", type: "Hacker" },
+            { text: "<ruby>新<rt>あたら</rt></ruby>しい<ruby>街<rt>まち</rt></ruby>のビジョンを<ruby>想像<rt>そうぞう</rt></ruby>する", type: "Visionary" }
+        ]
+    },
+    {
+        text: "<ruby>友達<rt>ともだち</rt></ruby>が<ruby>家<rt>いえ</rt></ruby>を<ruby>建<rt>た</rt></ruby>てている。どう手伝う？",
+        options: [
+            { text: "<ruby>便利<rt>べんり</rt></ruby>な<ruby>回路<rt>かいろ</rt></ruby>を<ruby>作<rt>つく</rt></ruby>ってプレゼントする", type: "Hacker" },
+            { text: "<ruby>細<rt>こま</rt></ruby>かな<ruby>装飾<rt>そうしょく</rt></ruby>をていねいに<ruby>手伝<rt>てつだ</rt></ruby>う", type: "Quality" }
+        ]
+    },
+    {
+        text: "<ruby>街<rt>まち</rt></ruby>のリーダーになったら、どっちをがんばる？",
+        options: [
+            { text: "<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>発展計画<rt>はってんけいかく</rt></ruby>をじっくり<ruby>立<rt>た</rt></ruby>てる", type: "Architect" },
+            { text: "みんなが<ruby>仲良<rt>なかよ</rt></ruby>く<ruby>遊<rt>あそ</rt></ruby>べる<ruby>場所<rt>ばしょ</rt></ruby>を<ruby>作<rt>つく</rt></ruby>る", type: "Organizer" }
+        ]
+    },
+    {
+        text: "だれもいない<ruby>場所<rt>ばしょ</rt></ruby>にポツンと<ruby>穴<rt>あな</rt></ruby>があいている。どうする？",
+        options: [
+            { text: "この<ruby>穴<rt>あな</rt></ruby>をどう<ruby>活用<rt>かつよう</rt></ruby>するかアイデアを<ruby>出<rt>だ</rt></ruby>す", type: "Visionary" },
+            { text: "<ruby>危<rt>あぶ</rt></ruby>なくないようにきれいにふさぐ", type: "Quality" }
+        ]
+    },
+    {
+        text: "<ruby>強<rt>つよ</rt></ruby>い<ruby>敵<rt>てき</rt></ruby>がせめてきた！どうやって戦う？",
+        options: [
+            { text: "<ruby>戦<rt>たたか</rt></ruby>いやすいように、みんなの<ruby>並<rt>なら</rt></ruby>び<ruby>方<rt>かた</rt></ruby>や<ruby>役割<rt>やくわり</rt></ruby>を<ruby>決<rt>き</rt></ruby>める", type: "Architect" },
+            { text: "<ruby>敵<rt>てき</rt></ruby>の<ruby>弱点<rt>じゃくてん</rt></ruby>をしらべて<ruby>作戦<rt>さくせん</rt></ruby>を<ruby>立<rt>た</rt></ruby>てる", type: "Strategist" }
+        ]
+    },
+    {
+        text: "<ruby>貴重<rt>きちょう</rt></ruby>なダイヤを<ruby>見<rt>み</rt></ruby>つけた！<br>使いみちは？",
+        options: [
+            { text: "もっとダイヤが<ruby>手<rt>て</rt></ruby>に<ruby>入<rt>はい</rt></ruby>る<ruby>装置<rt>そうち</rt></ruby>を<ruby>作<rt>つく</rt></ruby>る", type: "Strategist" },
+            { text: "みんなを<ruby>守<rt>まも</rt></ruby>るための<ruby>最強<rt>さいきょう</rt></ruby>の<ruby>武器<rt>ぶき</rt></ruby>を<ruby>作<rt>つく</rt></ruby>る", type: "Visionary" }
+        ]
+    },
+    {
+        text: "<ruby>街<rt>まち</rt></ruby>の<ruby>広場<rt>ひろば</rt></ruby>がさびしくなってきた。<br>どうする？",
+        options: [
+            { text: "<ruby>街<rt>まち</rt></ruby>のシンボルになる<ruby>巨大<rt>きょだい</rt></ruby>な<ruby>塔<rt>とう</rt></ruby>を<ruby>建<rt>た</rt></ruby>てる", type: "Architect" },
+            { text: "<ruby>活気<rt>かっき</rt></ruby>が<ruby>出<rt>で</rt></ruby>るようにダンスイベントを<ruby>開<rt>ひら</rt></ruby>く", type: "Organizer" }
+        ]
+    }
+];
+
+// 診断結果データ
+const results = {
+    Architect: {
+        title: "プロジェクト・アーキテクト（<ruby>構造設計者<rt>こうぞうせっけいしゃ</rt></ruby>）",
+        pose: "<ruby>街<rt>まち</rt></ruby><ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>都市計画<rt>としけいかく</rt></ruby>を<ruby>立<rt>た</rt></ruby>てたり、<ruby>大規模<rt>だいきぼ</rt></ruby>な<ruby>整地<rt>せいち</rt></ruby>を<ruby>指揮<rt>しき</rt></ruby>したりする<ruby>人<rt>ひと</rt></ruby>。",
+        spec: "<ruby>全体像<rt>ぜんたいぞう</rt></ruby>を<ruby>把握<rt>はあく</rt></ruby>し、<ruby>目標達成<rt>もくひょうたっせい</rt></ruby>のためのロードマップを<ruby>描<rt>えが</rt></ruby>く<ruby>力<rt>ちから</rt></ruby>。",
+        future: "AIが<ruby>個別<rt>こべつ</rt></ruby>の<ruby>作業<rt>さぎょう</rt></ruby>をこなす<ruby>時代<rt>じだい</rt></ruby>、それらをどう<ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせて一つの<ruby>目的<rt>もくてき</rt></ruby>を<ruby>達成<rt>たっせい</rt></ruby>するかという「<ruby>設計図<rt>せっけいず</rt></ruby>」を<ruby>書<rt>か</rt></ruby>くスキルはより<ruby>重要<rt>じゅうよう</rt></ruby>になります。"
+    },
+    Hacker: {
+        title: "イノベーション・ハッカー（<ruby>技術的突破者<rt>ぎじゅつてきとっぱしゃ</rt></ruby>）",
+        pose: "レッドストーン<ruby>回路<rt>かいろ</rt></ruby>やコマンドを<ruby>駆使<rt>くし</rt></ruby>して、だれも<ruby>見<rt>み</rt></ruby>たことがない<ruby>便利<rt>べんり</rt></ruby>な<ruby>装置<rt>そうち</rt></ruby>を<ruby>作<rt>つく</rt></ruby>る<ruby>人<rt>ひと</rt></ruby>。",
+        spec: "<ruby>既存<rt>きぞん</rt></ruby>のルールや<ruby>仕組<rt>しく</rt></ruby>みを<ruby>深<rt>ふか</rt></ruby>く<ruby>理解<rt>りかい</rt></ruby>し、<ruby>新<rt>あたら</rt></ruby>しい<ruby>使<rt>つか</rt></ruby>い<ruby>方<rt>かた</rt></ruby>を<ruby>発見<rt>はっけん</rt></ruby>する<ruby>力<rt>ちから</rt></ruby>。",
+        future: "<ruby>技術<rt>ぎじゅつ</rt></ruby>の<ruby>進歩<rt>しんぽ</rt></ruby>が<ruby>速<rt>はや</rt></ruby>いなか、<ruby>新<rt>あたら</rt></ruby>しいツールを<ruby>即座<rt>そくざ</rt></ruby>に<ruby>使<rt>つか</rt></ruby>いこなし、<ruby>独自<rt>どくじ</rt></ruby>の<ruby>価値<rt>かち</rt></ruby>を<ruby>生<rt>う</rt></ruby>み<ruby>出<rt>だ</rt></ruby>す「ハック<ruby>精神<rt>せいしん</rt></ruby>」は<ruby>重宝<rt>ちょうほう</rt></ruby>されます。"
+    },
+    Organizer: {
+        title: "コミュニティ・オーガナイザー（<ruby>組織活性者<rt>そしきかっせいしゃ</rt></ruby>）",
+        pose: "マルチサーバーの<ruby>平和<rt>へいわ</rt></ruby>を<ruby>守<rt>まも</rt></ruby>り、みんなが<ruby>楽<rt>たの</rt></ruby>しめるイベントを<ruby>企画<rt>きかく</rt></ruby>・<ruby>運営<rt>うんえい</rt></ruby>する<ruby>人<rt>ひと</rt></ruby>。",
+        spec: "メンバーの<ruby>個性<rt>こせい</rt></ruby>を<ruby>理解<rt>りかい</rt></ruby>し、<ruby>適切<rt>てきせつ</rt></ruby>な<ruby>配置<rt>はいち</rt></ruby>と<ruby>動機<rt>どうき</rt></ruby>づけを<ruby>行<rt>おこな</rt></ruby>う<ruby>力<rt>ちから</rt></ruby>。",
+        future: "チームが<ruby>分散化<rt>ぶんさんか</rt></ruby>（リモートなど）しても、<ruby>人<rt>ひと</rt></ruby>の<ruby>心<rt>こころ</rt></ruby>をつなぎ、<ruby>組織<rt>そしき</rt></ruby>の「<ruby>熱量<rt>ねつりょう</rt></ruby>」を<ruby>維持<rt>いじ</rt></ruby>するヒューマンスキルは<ruby>代替不能<rt>だいたいふのう</rt></ruby>な<ruby>価値<rt>かち</rt></ruby>になります。"
+    },
+    Quality: {
+        title: "クオリティ・オブザーバー（<ruby>品質監査者<rt>ひんしつかんさしゃ</rt></ruby>）",
+        pose: "<ruby>建築<rt>けんちく</rt></ruby>の<ruby>細<rt>こま</rt></ruby>かな<ruby>装飾<rt>そうしょく</rt></ruby>を<ruby>整<rt>ととの</rt></ruby>えたり、<ruby>回路<rt>かいろ</rt></ruby>のバグを<ruby>修正<rt>しゅうせい</rt></ruby>したりして、<ruby>作品<rt>さくひん</rt></ruby>の<ruby>完成度<rt>かんせいど</rt></ruby>を<ruby>上<rt>あ</rt></ruby>げる<ruby>人<rt>ひと</rt></ruby>。",
+        spec: "リスクを<ruby>察知<rt>さっち</rt></ruby>し、<ruby>細部<rt>さいぶ</rt></ruby>まで<ruby>妥協<rt>だきょう</rt></ruby>せずに<ruby>完成度<rt>かんせいど</rt></ruby>を<ruby>高<rt>たか</rt></ruby>める<ruby>力<rt>ちから</rt></ruby>。",
+        future: "<ruby>生成<rt>せいせい</rt></ruby>AIによる<ruby>大量生産時代<rt>たいりょうせいさんじだい</rt></ruby>こそ、<ruby>人間<rt>にんげん</rt></ruby>による「<ruby>最後<rt>さいご</rt></ruby>の<ruby>仕上<rt>しあ</rt></ruby>げ（<ruby>品質<rt>ひんしつ</rt></ruby>の<ruby>担保<rt>たんぽ</rt></ruby>）」や「<ruby>正確性<rt>せいかくせい</rt></ruby>の<ruby>確認<rt>かくにん</rt></ruby>」が<ruby>信頼<rt>しんらい</rt></ruby>の<ruby>証<rt>あかし</rt></ruby>になります。"
+    },
+    Strategist: {
+        title: "データ・ストラテジスト（<ruby>戦略分析家<rt>せんりゃくぶんせきか</rt></ruby>）",
+        pose: "どこでどの<ruby>素材<rt>そざい</rt></ruby>が<ruby>一番効率<rt>いちばんこうりつ</rt></ruby>よく<ruby>手<rt>て</rt></ruby>に<ruby>入<rt>はい</rt></ruby>るか<ruby>計算<rt>けいさん</rt></ruby>し、チェストの<ruby>中身<rt>なかみ</rt></ruby>を<ruby>完璧<rt>かんぺき</rt></ruby>に<ruby>分類<rt>ぶんるい</rt></ruby>・<ruby>管理<rt>かんり</rt></ruby>する<ruby>人<rt>ひと</rt></ruby>。",
+        spec: "<ruby>情報<rt>じょうほう</rt></ruby>のなかからパターンを<ruby>見<rt>み</rt></ruby>つけ、もっとも<ruby>効率的<rt>こうりつてき</rt></ruby>な<ruby>答<rt>こた</rt></ruby>えを<ruby>導<rt>みちび</rt></ruby>き<ruby>出<rt>だ</rt></ruby>す<ruby>力<rt>ちから</rt></ruby>。",
+        future: "あふれる<ruby>情報<rt>じょうほう</rt></ruby>のなかから「いま、何をすべきか」を<ruby>論理的<rt>ろんりてき</rt></ruby>に<ruby>判断<rt>はんだん</rt></ruby>できる<ruby>能力<rt>のうりょく</rt></ruby>は、<ruby>意思決定<rt>いしけってい</rt></ruby>の<ruby>鍵<rt>かぎ</rt></ruby>となります。"
+    },
+    Visionary: {
+        title: "ビジョナリー・エバンジェリスト（<ruby>ビジョン<rt>びじょん</rt></ruby><ruby>伝道師<rt>でんどうし</rt></ruby>）",
+        pose: "「ここをこんな<ruby>素晴<rt>すば</rt></ruby>らしい<ruby>街<rt>まち</rt></ruby>にしよう！」と<ruby>熱<rt>あつ</rt></ruby>く<ruby>語<rt>かた</rt></ruby>り、<ruby>周囲<rt>しゅうい</rt></ruby>をその<ruby>気<rt>き</rt></ruby>にさせて<ruby>協力者<rt>きょうりょくしゃ</rt></ruby>を<ruby>集<rt>あつ</rt></ruby>める<ruby>人<rt>ひと</rt></ruby>。",
+        spec: "<ruby>言葉<rt>ことば</rt></ruby>やイメージで<ruby>未来<rt>みらい</rt></ruby>を<ruby>語<rt>かた</rt></ruby>り、<ruby>人々<rt>ひとびと</rt></ruby>のワクワクを<ruby>引<rt>ひ</rt></ruby>き<ruby>出<rt>だ</rt></ruby>す<ruby>力<rt>ちから</rt></ruby>。",
+        future: "<ruby>変化<rt>へんか</rt></ruby>の<ruby>激<rt>hage</rt></ruby>しい<ruby>時代<rt>じだい</rt></ruby>、<ruby>人々<rt>ひとびと</rt></ruby>を<ruby>迷<rt>まよ</rt></ruby>わせず「あっちへ<ruby>行<rt>い</rt></ruby>こう！」と<ruby>指<rt>ゆび</rt></ruby>し<ruby>示<rt>しめ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>の<ruby>力<rt>ちから</rt></ruby>は、リーダーシップの<ruby>本質<rt>ほんしつ</rt></ruby>です。"
+    }
+};
+
+let currentIdx = 0;
+let scores = { Architect: 0, Hacker: 0, Organizer: 0, Quality: 0, Strategist: 0, Visionary: 0 };
+let currentResultData = null; // 診断結果を保持するグローバル変数を追加
+
+function startQuiz() {
+    questions.sort(() => Math.random() - 0.5);
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("quiz-area").style.display = "block";
+    showQuestion();
+}
+
+function showQuestion() {
+    const q = questions[currentIdx];
+    const heartDisplay = document.getElementById("heart-display");
+    heartDisplay.innerHTML = ""; // 一旦クリア
+
+    const totalHearts = questions.length;
+    const currentHeartCount = currentIdx + 1;
+
+    for (let i = 0; i < totalHearts; i++) {
+        const heart = document.createElement("div");
+        heart.className = "pixel-heart";
+        // 答えた数より後ろのハートは「空（グレー）」にする
+        if (i >= currentHeartCount) {
+            heart.classList.add("empty");
+        }
+        heartDisplay.appendChild(heart);
+    }
+
+    document.getElementById("question-text").innerHTML = q.text;
+
+    const shuffledOptions = [...q.options];
+    shuffledOptions.sort(() => Math.random() - 0.5);
+
+    // 選択肢を描画する処理の例
+    const btnArea = document.getElementById("answer-buttons");
+    btnArea.innerHTML = ""; // 一旦クリア
+
+    // シャッフルされた選択肢の配列（shuffledOptions）を展開する
+    shuffledOptions.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.innerHTML = opt.text;
+        btn.onclick = () => next(opt.type);
+        btnArea.appendChild(btn);
+})
+}
+
+function next(type) {
+    scores[type]++;
+    currentIdx++;
+    if (currentIdx < questions.length) {
+        showQuestion();
+    } else {
+        showResult();
+    }
+}
+
+function showResult() {
+    document.getElementById("quiz-area").style.display = "none";
+    document.getElementById("result-area").style.display = "block";
+    
+    // 1. 最高スコアの数値を特定
+    const maxScore = Math.max(...Object.values(scores));
+    
+    // 2. 最高スコアを持つタイプをすべて抽出する
+    const topTypes = Object.keys(scores).filter(type => scores[type] === maxScore);
+    
+    // 3. 同点のタイプからランダムに1つ選ぶ
+    const topType = topTypes[Math.floor(Math.random() * topTypes.length)];    const res = results[topType];
+    
+    // グローバル変数に結果データを保存
+    currentResultData = res;
+    
+    document.getElementById("result-title-main").innerHTML = res.title;
+    
+    const details = document.getElementById("result-details");
+    details.innerHTML = `
+        <div class="result-item">
+            <span class="label">🛠️ マイクラでのあなた</span><br>
+            ${res.pose}
+        </div>
+        <div class="result-item">
+            <span class="label">📜 専門性（とくせい）</span><br>
+            ${res.spec}
+        </div>
+        <div class="result-item">
+            <span class="label">💎 10年後の価値</span><br>
+            ${res.future}
+        </div>
+    `;
+    
+    const ctx = document.getElementById('resultChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['設計', '突破', '組織', '品質', '戦略', 'ビジョン'],
+            datasets: [{
+                label: '君のステータス',
+                data: [scores.Architect, scores.Hacker, scores.Organizer, scores.Quality, scores.Strategist, scores.Visionary],
+                backgroundColor: 'rgba(165, 214, 167, 0.6)', 
+                borderColor: '#ffffff', 
+                pointBackgroundColor: '#ffffff', 
+                borderWidth: 3
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.5)' }, 
+                    grid: { color: 'rgba(255, 255, 255, 0.5)' }, 
+                    pointLabels: {
+                        color: '#ffffff', 
+                        font: {
+                            family: 'DotGothic16',
+                            size: 14
+                        }
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 4, 
+                    ticks: { display: false, stepSize: 1 }
+                }
+            },
+            plugins: { 
+                legend: { display: false } 
+            }
+        }
+    });
+}
+
+function shareResult() {
+    // 保存したグローバルデータをチェック
+    if (!currentResultData) {
+        alert("診断結果がありません。");
+        return;
+    }
+    
+    // HTMLタグを除去してテキストを取り出す
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = currentResultData.title;
+    const typeName = tempDiv.innerText || tempDiv.textContent;
+    
+    const shareText = `マイクラキャリアビジョン診断の結果、私のタイプは…\n【${typeName}】でした！\n#マイクラキャリアビジョン診断 #フラミーゴ`;
+    const shareUrl = window.location.href; 
+
+    //スマホのシェア機能またはクリップボードコピー
+    if (navigator.share) {
+        navigator.share({
+            title: 'マイクラキャリアビジョン診断',
+            text: shareText,
+            url: shareUrl
+        }).catch(() => {
+            alert("シェアに失敗しました");
+        });
+    } else {
+        const fullText = `${shareText}\n${shareUrl}`;
+        navigator.clipboard.writeText(fullText).then(() => {
+            alert("結果をクリップボードにコピーしたよ！貼り付けてみんなに教えてね。");
+        });
+    }
+}
+</script>
+</body>
+</html>
