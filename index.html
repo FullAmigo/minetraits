@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="マイクラの遊び方でわかる！キャリアビジョン診断">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fullamigo.github.io/minetraits/index.html">
+    <meta property="og:image" content="https://fullamigo.github.io/minetraits/thumbnail.png">
+    <meta property="og:description" content="10年後の未来で、君はどんな力を発揮しているかな？マイクラの遊び方から君のキャリアビジョンを診断しよう！">
+    <meta property="og:site_name" content="マイクラキャリアビジョン診断">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://fullamigo.github.io/minetraits/thumbnail.png">
     <title>マイクラの遊び方でわかる！キャリアビジョン診断</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -444,18 +452,23 @@ function shareResult() {
         return;
     }
     
+    // ルビのタグを除去してテキストを取り出す
+    let titleHtml = currentResultData.title;
+    titleHtml = titleHtml.replace(/<rt>.*?<\/rt>/g, ""); // ふりがな部分を削除
+    titleHtml = titleHtml.replace(/<\/?ruby>/g, "");   // rubyタグを削除
+
     // HTMLタグを除去してテキストを取り出す
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = currentResultData.title;
+    tempDiv.innerHTML = titleHtml;
     const typeName = tempDiv.innerText || tempDiv.textContent;
     
     const shareText = `マイクラキャリアビジョン診断の結果、私のタイプは…\n【${typeName}】でした！\n#マイクラキャリアビジョン診断 #フラミーゴ`;
     const shareUrl = window.location.href; 
 
-    //スマホのシェア機能またはクリップボードコピー
+    スマホのシェア機能またはクリップボードコピー
     if (navigator.share) {
         navigator.share({
-            title: 'マイクラキャリアビジョン診断',
+            title: '🌳マイクラキャリアビジョン診断⛏️',
             text: shareText,
             url: shareUrl
         }).catch(() => {
